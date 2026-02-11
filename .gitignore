@@ -1,0 +1,17 @@
+# Local editor/project files
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build and cache artifacts
+build/
+out/
+.cache/
+
+# Optional local screenshots/previews
+screenshots/
+preview/
+
+# Local review notes
+CodexReport.md

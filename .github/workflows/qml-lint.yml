@@ -1,0 +1,29 @@
+name: QML Lint
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  qmllint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install qmllint
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qtdeclarative5-dev-tools
+
+      - name: Run qmllint
+        run: |
+          qmllint Main.qml \
+            components/background/BackgroundLayer.qml \
+            components/clock/ClockBlock.qml \
+            components/center/LoginPanel.qml \
+            components/sidebars/UserSidebar.qml \
+            components/sidebars/SessionSidebar.qml \
+            components/controls/OnScreenKeyboard.qml \
+            components/controls/PowerRow.qml

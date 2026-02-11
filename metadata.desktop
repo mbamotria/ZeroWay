@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=ZeroWay
+Comment=Feature-rich SDDM theme with ambient motion, spotlight focus, and preview mode
+Description=ZeroWay is a polished SDDM login theme with adaptive scaling, keyboard-first UX, and tasteful motion.
+Author=motria
+Version=1.0.0
+Type=Service
+X-KDE-ServiceTypes=LoginManagerTheme
