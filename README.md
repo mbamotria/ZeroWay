@@ -5,7 +5,10 @@ A feature-rich SDDM theme with adaptive scaling, keyboard-first UX, and tasteful
 Tested on: `Arch Linux`
 
 **Preview**
-- [Screen recording (MP4)](Screenrecords/ZeroWay.mp4)
+
+
+https://github.com/user-attachments/assets/262bef7e-d3e9-4ddd-b86e-3b91d5837460
+
 
 ![Main Page](Screenshots/MainPage.png)
 ![User Selection](Screenshots/UserSelection.png)
