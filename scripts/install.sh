@@ -8,6 +8,7 @@ SDDM_CONF_FILE="${SDDM_CONF_FILE:-$SDDM_CONF_DIR/10-zeroway-theme.conf}"
 ACTIVATE_THEME="${ACTIVATE_THEME:-1}"
 SKIP_DEP_CHECK="${SKIP_DEP_CHECK:-0}"
 AUTO_INSTALL_DEPS="${AUTO_INSTALL_DEPS:-1}"
+DEBUG_DEP_CHECK="${DEBUG_DEP_CHECK:-0}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -26,19 +27,54 @@ QML_ROOTS=(
   "/usr/lib/aarch64-linux-gnu/qt6/qml"
 )
 
+collect_qml_roots() {
+  local discovered=()
+  local cmd out line
+
+  discovered+=("${QML_ROOTS[@]}")
+
+  if [[ -n "${QML2_IMPORT_PATH:-}" ]]; then
+    IFS=':' read -r -a out <<< "${QML2_IMPORT_PATH}"
+    discovered+=("${out[@]}")
+  fi
+
+  for cmd in qtpaths qtpaths6 qtpaths5; do
+    if command -v "$cmd" >/dev/null 2>&1; then
+      line="$($cmd --query QML2_IMPORT_PATH 2>/dev/null || true)"
+      if [[ -n "$line" ]]; then
+        IFS=':' read -r -a out <<< "$line"
+        discovered+=("${out[@]}")
+      fi
+    fi
+  done
+
+  if [[ "$DEBUG_DEP_CHECK" == "1" ]]; then
+    echo "QML roots being checked:"
+  fi
+
+  local root
+  local -A seen=()
+  for root in "${discovered[@]}"; do
+    [[ -z "$root" ]] && continue
+    [[ ! -d "$root" ]] && continue
+    if [[ -z "${seen[$root]:-}" ]]; then
+      seen[$root]=1
+      if [[ "$DEBUG_DEP_CHECK" == "1" ]]; then
+        echo "- $root"
+      fi
+      printf '%s\n' "$root"
+    fi
+  done
+}
+
 has_qml_module() {
   local module_path="$1"
   local root
-  local extra_roots=()
-  if [[ -n "${QML2_IMPORT_PATH:-}" ]]; then
-    IFS=':' read -r -a extra_roots <<< "${QML2_IMPORT_PATH}"
-  fi
-  for root in "${QML_ROOTS[@]}" "${extra_roots[@]}"; do
-    [[ -z "$root" ]] && continue
+  while IFS= read -r root; do
     if [[ -d "$root/$module_path" ]]; then
       return 0
     fi
-  done
+  done < <(collect_qml_roots)
   return 1
 }
 
