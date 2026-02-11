@@ -67,29 +67,43 @@ collect_qml_roots() {
   done
 }
 
-has_qml_module() {
-  local module_path="$1"
+has_any_qml_module_path() {
   local root
+  local module_path
   while IFS= read -r root; do
-    if [[ -d "$root/$module_path" ]]; then
-      return 0
-    fi
+    for module_path in "$@"; do
+      if [[ -d "$root/$module_path" ]]; then
+        return 0
+      fi
+    done
   done < <(collect_qml_roots)
+  return 1
+}
+
+has_qml_module() {
+  local module_name="$1"
+  shift
+  if has_any_qml_module_path "$@"; then
+    return 0
+  fi
+  if [[ "$DEBUG_DEP_CHECK" == "1" ]]; then
+    echo "Missing QML module: $module_name"
+  fi
   return 1
 }
 
 detect_missing_modules() {
   local missing=()
-  if ! has_qml_module "QtQuick"; then
+  if ! has_qml_module "QtQuick" "QtQuick" "QtQuick.2"; then
     missing+=("QtQuick")
   fi
-  if ! has_qml_module "QtQuick/Controls"; then
+  if ! has_qml_module "QtQuick.Controls" "QtQuick/Controls" "QtQuick/Controls.2"; then
     missing+=("QtQuick.Controls")
   fi
-  if ! has_qml_module "QtGraphicalEffects"; then
+  if ! has_qml_module "QtGraphicalEffects" "QtGraphicalEffects"; then
     missing+=("QtGraphicalEffects")
   fi
-  if ! has_qml_module "SddmComponents"; then
+  if ! has_qml_module "SddmComponents" "SddmComponents"; then
     missing+=("SddmComponents")
   fi
   printf '%s\n' "${missing[@]}"
