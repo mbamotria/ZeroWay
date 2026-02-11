@@ -20,12 +20,21 @@ QML_ROOTS=(
   "/usr/lib/qt6/qml"
   "/usr/lib64/qt5/qml"
   "/usr/lib64/qt6/qml"
+  "/usr/lib/x86_64-linux-gnu/qt5/qml"
+  "/usr/lib/x86_64-linux-gnu/qt6/qml"
+  "/usr/lib/aarch64-linux-gnu/qt5/qml"
+  "/usr/lib/aarch64-linux-gnu/qt6/qml"
 )
 
 has_qml_module() {
   local module_path="$1"
   local root
-  for root in "${QML_ROOTS[@]}"; do
+  local extra_roots=()
+  if [[ -n "${QML2_IMPORT_PATH:-}" ]]; then
+    IFS=':' read -r -a extra_roots <<< "${QML2_IMPORT_PATH}"
+  fi
+  for root in "${QML_ROOTS[@]}" "${extra_roots[@]}"; do
+    [[ -z "$root" ]] && continue
     if [[ -d "$root/$module_path" ]]; then
       return 0
     fi

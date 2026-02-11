@@ -15,7 +15,11 @@ jobs:
       - name: Install qmllint
         run: |
           sudo apt-get update
-          sudo apt-get install -y qtdeclarative5-dev-tools
+          sudo apt-get install -y \
+            qtdeclarative5-dev-tools \
+            qml-module-qtquick-controls2 \
+            qml-module-qtgraphicaleffects \
+            sddm
 
       - name: Run qmllint
         run: |
