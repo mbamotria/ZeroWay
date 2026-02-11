@@ -368,6 +368,27 @@ Rectangle {
         if (loginPanel) loginPanel.focusPassword();
     }
 
+    function routeTypingToPassword(event) {
+        if (!loginPanel || !loginPanel.passField) return false;
+        var field = loginPanel.passField;
+        if (field.activeFocus) return false;
+        if (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) return false;
+
+        if (event.key === Qt.Key_Backspace) {
+            var pos = field.cursorPosition;
+            if (pos > 0) field.remove(pos - 1, pos);
+            field.forceActiveFocus();
+            return true;
+        }
+
+        if (event.text && event.text.length > 0 && event.text !== "\r" && event.text !== "\n" && event.text !== "\t") {
+            field.insert(field.cursorPosition, event.text);
+            field.forceActiveFocus();
+            return true;
+        }
+        return false;
+    }
+
     function openUserSidebar() {
         root.userSidebarOpen = !root.userSidebarOpen;
         root.sessionSidebarOpen = false;
@@ -428,10 +449,17 @@ Rectangle {
             if (event.key === Qt.Key_S) {
                 openSessionSidebar();
                 event.accepted = true;
+                return;
             } else if (event.key === Qt.Key_U) {
                 openUserSidebar();
                 event.accepted = true;
+                return;
             }
+        }
+
+        if (routeTypingToPassword(event)) {
+            event.accepted = true;
+            return;
         }
     }
 
