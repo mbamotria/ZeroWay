@@ -62,6 +62,11 @@ To uninstall:
 make uninstall
 ```
 
+Install files only (does not activate theme):
+```bash
+make install-files
+```
+
 **Manual Setup**
 1. Copy this project folder to `/usr/share/sddm/themes/ZeroWay`.
 2. Create `/etc/sddm.conf.d/10-zeroway-theme.conf` with:
