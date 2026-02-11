@@ -9,6 +9,7 @@ ACTIVATE_THEME="${ACTIVATE_THEME:-1}"
 SKIP_DEP_CHECK="${SKIP_DEP_CHECK:-0}"
 AUTO_INSTALL_DEPS="${AUTO_INSTALL_DEPS:-1}"
 DEBUG_DEP_CHECK="${DEBUG_DEP_CHECK:-0}"
+STRICT_DEP_CHECK="${STRICT_DEP_CHECK:-0}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -106,7 +107,9 @@ detect_missing_modules() {
   if ! has_qml_module "SddmComponents" "SddmComponents"; then
     missing+=("SddmComponents")
   fi
-  printf '%s\n' "${missing[@]}"
+  if [[ "${#missing[@]}" -gt 0 ]]; then
+    printf '%s\n' "${missing[@]}"
+  fi
 }
 
 try_install_dependencies() {
@@ -144,17 +147,33 @@ fi
 
 if [[ "$SKIP_DEP_CHECK" != "1" ]]; then
   mapfile -t missing_modules < <(detect_missing_modules)
+  filtered_missing=()
+  for m in "${missing_modules[@]}"; do
+    if [[ -n "$m" ]]; then
+      filtered_missing+=("$m")
+    fi
+  done
+  missing_modules=("${filtered_missing[@]}")
   if [[ "${#missing_modules[@]}" -gt 0 ]]; then
     echo "Missing QML modules detected:"
     printf -- '- %s\n' "${missing_modules[@]}"
 
+    attempted_auto_install=0
     if try_install_dependencies; then
+      attempted_auto_install=1
       mapfile -t missing_modules < <(detect_missing_modules)
+      filtered_missing=()
+      for m in "${missing_modules[@]}"; do
+        if [[ -n "$m" ]]; then
+          filtered_missing+=("$m")
+        fi
+      done
+      missing_modules=("${filtered_missing[@]}")
     fi
-  fi
 
-  if [[ "${#missing_modules[@]}" -gt 0 ]]; then
-    cat <<MSG
+    if [[ "${#missing_modules[@]}" -gt 0 ]]; then
+      if [[ "$STRICT_DEP_CHECK" == "1" ]]; then
+        cat <<MSG
 Dependency check failed. Installation aborted before changing active SDDM theme.
 
 Missing modules after install attempt:
@@ -169,7 +188,17 @@ On Arch Linux, install/verify:
 Then run installer again, or bypass checks with:
 SKIP_DEP_CHECK=1 sudo ./scripts/install.sh
 MSG
-    exit 1
+        exit 1
+      fi
+
+      cat <<MSG
+Warning: some QML modules still appear missing:
+$(printf -- '- %s\n' "${missing_modules[@]}")
+
+Continuing installation because STRICT_DEP_CHECK=0.
+Set STRICT_DEP_CHECK=1 to enforce hard-fail behavior.
+MSG
+    fi
   fi
 fi
 
