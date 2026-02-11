@@ -15,6 +15,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 TARGET_DIR="$THEME_DIR/$THEME_NAME"
 TIMESTAMP="$(date +%Y%m%d%H%M%S)"
+FONT_SOURCE_DIR="$REPO_ROOT/fonts"
+SYSTEM_FONT_DIR="${SYSTEM_FONT_DIR:-/usr/local/share/fonts/ForZeroWay}"
+INSTALL_SYSTEM_FONTS="${INSTALL_SYSTEM_FONTS:-1}"
 
 QML_ROOTS=(
   "/usr/lib/qt/qml"
@@ -139,6 +142,52 @@ try_install_dependencies() {
   return 1
 }
 
+collect_theme_fonts() {
+  if [[ ! -d "$FONT_SOURCE_DIR" ]]; then
+    return 0
+  fi
+
+  find "$FONT_SOURCE_DIR" -type f \
+    \( -iname '*.ttf' -o -iname '*.otf' -o -iname '*.ttc' \)
+}
+
+install_fonts_systemwide() {
+  if [[ "$INSTALL_SYSTEM_FONTS" != "1" ]]; then
+    return 0
+  fi
+
+  if [[ ! -d "$FONT_SOURCE_DIR" ]]; then
+    echo "No fonts directory found at: $FONT_SOURCE_DIR"
+    return 0
+  fi
+
+  mapfile -t font_files < <(collect_theme_fonts)
+  if [[ "${#font_files[@]}" -eq 0 ]]; then
+    echo "No installable font files found in: $FONT_SOURCE_DIR"
+    return 0
+  fi
+
+  install -d -m 755 "$SYSTEM_FONT_DIR"
+
+  local src rel dest_dir dest_file
+  local files_installed=0
+
+  for src in "${font_files[@]}"; do
+    rel="${src#$FONT_SOURCE_DIR/}"
+    dest_dir="$SYSTEM_FONT_DIR/$(dirname "$rel")"
+    dest_file="$SYSTEM_FONT_DIR/$rel"
+    install -d -m 755 "$dest_dir"
+    install -m 644 "$src" "$dest_file"
+    files_installed=$((files_installed + 1))
+  done
+
+  if command -v fc-cache >/dev/null 2>&1; then
+    fc-cache -f "$SYSTEM_FONT_DIR" >/dev/null 2>&1 || true
+  fi
+
+  echo "Installed $files_installed font file(s) to: $SYSTEM_FONT_DIR"
+}
+
 if [[ "${EUID}" -ne 0 ]]; then
   echo "This installer must run as root."
   echo "Run: sudo ./scripts/install.sh"
@@ -219,6 +268,8 @@ tar -C "$REPO_ROOT" \
   --exclude='scripts' \
   --exclude='CodexReport.md' \
   -cf - . | tar -C "$TARGET_DIR" -xf -
+
+install_fonts_systemwide
 
 if [[ "$ACTIVATE_THEME" == "1" ]]; then
   cat > "$SDDM_CONF_FILE" <<CFG
